@@ -90,7 +90,7 @@ func getOffsetCoordinator() (err error) {
 	return nil
 }
 
-func fetchOffsets(consumerGroup string, topic string, partitions ...int32) (res map[int32]int64, err error) {
+func fetchConsumerGroupOffsets(consumerGroup string, topic string, partitions ...int32) (res map[int32]int64, err error) {
 	res = make(map[int32]int64)
 	for _, p := range partitions {
 		req := &sarama.OffsetFetchRequest{
@@ -115,7 +115,7 @@ func fetchOffsets(consumerGroup string, topic string, partitions ...int32) (res 
 	return
 }
 
-func fetchOffsets2(topic string, partitions ...int32) (res map[int32]int64, err error) {
+func fetchAvailableOffsets(topic string, partitions ...int32) (res map[int32]int64, err error) {
 	var offset int64
 	partition := int32(flPartition)
 
@@ -158,7 +158,7 @@ func getConsumerOffset() error {
 	var offsets map[int32]int64
 	var err error
 	if partition > -1 {
-		offsets, err = fetchOffsets(flConsumerGroup, flTopic, partition)
+		offsets, err = fetchConsumerGroupOffsets(flConsumerGroup, flTopic, partition)
 		if err != nil {
 			return err
 		}
@@ -168,7 +168,7 @@ func getConsumerOffset() error {
 		return nil
 	}
 
-	offsets, err = fetchOffsets(flConsumerGroup, flTopic, partitions[flTopic]...)
+	offsets, err = fetchConsumerGroupOffsets(flConsumerGroup, flTopic, partitions[flTopic]...)
 	if err != nil {
 		return err
 	}
@@ -185,7 +185,7 @@ func getOffset() (err error) {
 
 	var offsets map[int32]int64
 	if partition > -1 {
-		offsets, err = fetchOffsets2(flTopic, partition)
+		offsets, err = fetchAvailableOffsets(flTopic, partition)
 		if err != nil {
 			return err
 		}
@@ -195,7 +195,7 @@ func getOffset() (err error) {
 		return nil
 	}
 
-	offsets, err = fetchOffsets2(flTopic, partitions[flTopic]...)
+	offsets, err = fetchAvailableOffsets(flTopic, partitions[flTopic]...)
 	if err != nil {
 		return err
 	}
