@@ -10,6 +10,14 @@ import (
 	"github.com/vrischmann/koff/Godeps/_workspace/src/github.com/Shopify/sarama"
 )
 
+type command int
+
+const (
+	cmdGetOffset command = iota
+	cmdGetConsumerGroupOffset
+	cmdCompareOffset
+)
+
 type topicAndPartition struct {
 	topic     string
 	partition int32
@@ -17,6 +25,7 @@ type topicAndPartition struct {
 
 var (
 	topics []string
+	cmd    command
 
 	client            sarama.Client
 	leaders           = make(map[topicAndPartition]*sarama.Broker)
@@ -206,6 +215,49 @@ func getOffset() (err error) {
 	return nil
 }
 
+func compareOffset() (err error) {
+	if err := getOffsetCoordinator(); err != nil {
+		return err
+	}
+
+	partition := int32(flPartition)
+
+	var offsets map[int32]int64
+	var availableOffsets map[int32]int64
+
+	if partition > -1 {
+		offsets, err = fetchConsumerGroupOffsets(flConsumerGroup, flTopic, partition)
+		if err != nil {
+			return err
+		}
+
+		availableOffsets, err = fetchAvailableOffsets(flTopic, partition)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("p:%-4d available: %d consumer: %d\n", partition, availableOffsets[partition], offsets[partition])
+
+		return nil
+	}
+
+	offsets, err = fetchConsumerGroupOffsets(flConsumerGroup, flTopic, partitions[flTopic]...)
+	if err != nil {
+		return err
+	}
+
+	availableOffsets, err = fetchAvailableOffsets(flTopic, partitions[flTopic]...)
+	if err != nil {
+		return err
+	}
+
+	for _, p := range partitions[flTopic] {
+		fmt.Printf("p:%-4d available: %d consumer: %d\n", p, availableOffsets[p], offsets[p])
+	}
+
+	return nil
+}
+
 func checkFlags() error {
 	if flBroker == "" {
 		return errors.New("broker is not set")
@@ -215,10 +267,16 @@ func checkFlags() error {
 		return errors.New("topic is not set")
 	}
 
+	if cmd == cmdCompareOffset || cmd == cmdGetConsumerGroupOffset {
+		if flConsumerGroup == "" {
+			return errors.New("consumer group is not set")
+		}
+	}
+
 	return nil
 }
 
-func cgoCommand() error {
+func cggoCommand() error {
 	if err := fsConsumerGroup.Parse(flag.Args()[1:]); err != nil {
 		return err
 	}
@@ -252,17 +310,42 @@ func goCommand() error {
 	return getOffset()
 }
 
+func coCommand() error {
+	if err := fsGetOffset.Parse(flag.Args()[1:]); err != nil {
+		return err
+	}
+
+	if err := checkFlags(); err != nil {
+		return err
+	}
+
+	if err := initSarama(); err != nil {
+		return err
+	}
+	defer client.Close()
+
+	return compareOffset()
+}
+
 func main() {
 	flag.Parse()
 
 	switch strings.ToLower(flag.Arg(0)) {
-	case "cgo":
-		if err := cgoCommand(); err != nil {
+	case "consumer-group-get-offset", "cggo":
+		cmd = cmdGetConsumerGroupOffset
+		if err := cggoCommand(); err != nil {
 			log.Fatalln(err)
 			return
 		}
-	case "go":
+	case "get-offset", "go":
+		cmd = cmdGetOffset
 		if err := goCommand(); err != nil {
+			log.Fatalln(err)
+			return
+		}
+	case "compare-offset", "co":
+		cmd = cmdCompareOffset
+		if err := coCommand(); err != nil {
 			log.Fatalln(err)
 			return
 		}
