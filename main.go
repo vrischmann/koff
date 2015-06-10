@@ -7,7 +7,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/Shopify/sarama"
+	"github.com/vrischmann/koff/Godeps/_workspace/src/github.com/Shopify/sarama"
 )
 
 type topicAndPartition struct {
