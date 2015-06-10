@@ -311,7 +311,7 @@ func goCommand() error {
 }
 
 func coCommand() error {
-	if err := fsGetOffset.Parse(flag.Args()[1:]); err != nil {
+	if err := fsCompareOffset.Parse(flag.Args()[1:]); err != nil {
 		return err
 	}
 
