@@ -20,12 +20,12 @@ var (
 func init() {
 	flag.Usage = printUsage
 
-	fsConsumerGroup.StringVar(&flBroker, "b", "", "The broker to use")
+	flag.StringVar(&flBroker, "b", "", "The broker to use")
+
 	fsConsumerGroup.StringVar(&flConsumerGroup, "c", "", "The consumer group")
 	fsConsumerGroup.StringVar(&flTopic, "t", "", "The topic")
 	fsConsumerGroup.IntVar(&flPartition, "p", -1, "The partition")
 
-	fsGetOffset.StringVar(&flBroker, "b", "", "The broker to use")
 	fsGetOffset.StringVar(&flTopic, "t", "", "The topic")
 	fsGetOffset.IntVar(&flPartition, "p", -1, "The partition")
 	fsGetOffset.BoolVar(&flNewest, "n", true, "Get the newest offset instead of the oldest")
