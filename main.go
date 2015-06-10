@@ -118,7 +118,7 @@ func fetchConsumerGroupOffsets(consumerGroup string, topic string, partitions ..
 			return nil, block.Err
 		}
 
-		res[p] = resp.Blocks[topic][p].Offset
+		res[p] = resp.Blocks[topic][p].Offset + 1 // the offset we fetch is the last committed we need the next to fetch
 	}
 
 	return
