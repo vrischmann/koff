@@ -117,7 +117,6 @@ func fetchConsumerGroupOffsets(consumerGroup string, topic string, partitions ..
 
 func fetchAvailableOffsets(topic string, partitions ...int32) (res map[int32]int64, err error) {
 	var offset int64
-	partition := int32(flPartition)
 
 	if flNewest {
 		offset = sarama.OffsetNewest
@@ -128,7 +127,7 @@ func fetchAvailableOffsets(topic string, partitions ...int32) (res map[int32]int
 	res = make(map[int32]int64)
 	for _, p := range partitions {
 		req := &sarama.OffsetRequest{}
-		req.AddBlock(flTopic, partition, offset, 1)
+		req.AddBlock(flTopic, p, offset, 1)
 
 		tp := topicAndPartition{topic, p}
 
@@ -137,9 +136,9 @@ func fetchAvailableOffsets(topic string, partitions ...int32) (res map[int32]int
 			return nil, err
 		}
 
-		block := resp.GetBlock(flTopic, partition)
+		block := resp.GetBlock(flTopic, p)
 		if block.Err != sarama.ErrNoError {
-			return nil, err
+			return nil, block.Err
 		}
 
 		res[p] = block.Offsets[0]
@@ -163,7 +162,7 @@ func getConsumerOffset() error {
 			return err
 		}
 
-		fmt.Printf("p:%-4d %d\n", partition, offsets[0])
+		fmt.Printf("p:%-4d %d\n", partition, offsets[partition])
 
 		return nil
 	}
@@ -190,7 +189,7 @@ func getOffset() (err error) {
 			return err
 		}
 
-		fmt.Printf("p:%-4d %d\n", partition, offsets[0])
+		fmt.Printf("p:%-4d %d\n", partition, offsets[partition])
 
 		return nil
 	}
