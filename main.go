@@ -252,7 +252,11 @@ func compareOffset() (err error) {
 	}
 
 	for _, p := range partitions[flTopic] {
-		fmt.Printf("p:%-4d available: %d consumer: %d\n", p, availableOffsets[p], offsets[p])
+		fmt.Printf("p:%-4d available: %-10d consumer: %-10d", p, availableOffsets[p], offsets[p])
+		if availableOffsets[p] != offsets[p] {
+			fmt.Printf("   !")
+		}
+		fmt.Printf("\n")
 	}
 
 	return nil
