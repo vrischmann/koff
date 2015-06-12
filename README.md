@@ -9,18 +9,26 @@ Here it is for your convenience:
 
 ```
 Usage of ./koff
+  -b="": The broker to use
 
 Subcommands:
 
-cgo (consumer group get offset)
-  -b="": The broker to use
+get-consumer-group-offset, gcgo
+  -V=1: The Kafka protocol version
   -c="": The consumer group
   -p=-1: The partition
   -t="": The topic
 
-go (get offset)
-  -b="": The broker to use
+get-offset, go
   -n=true: Get the newest offset instead of the oldest
   -p=-1: The partition
   -t="": The topic
+
+drift, d
+  -V=1: The Kafka protocol version
+  -c="": The consumer group
+  -n=true: Compare to the newest offset instead of the oldest
+  -p=-1: The partition
+  -t="": The topic
+
 ```
