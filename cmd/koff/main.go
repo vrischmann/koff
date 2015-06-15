@@ -57,7 +57,7 @@ func checkFlags() error {
 	return nil
 }
 
-func gcgo() (err error) {
+func getConsumerGroupOffset() (err error) {
 	k := koff.New(client)
 	if err := k.Init(); err != nil {
 		return err
@@ -84,7 +84,7 @@ func gcgo() (err error) {
 	return nil
 }
 
-func go_() (err error) {
+func getOffset() (err error) {
 	k := koff.New(client)
 	if err := k.Init(); err != nil {
 		return err
@@ -115,7 +115,7 @@ func go_() (err error) {
 	return nil
 }
 
-func drift() (err error) {
+func getDrift() (err error) {
 	k := koff.New(client)
 	if err := k.Init(); err != nil {
 		return err
@@ -180,7 +180,7 @@ func gcgoCommand() error {
 	}
 	defer client.Close()
 
-	return gcgo()
+	return getConsumerGroupOffset()
 }
 
 func goCommand() error {
@@ -197,7 +197,7 @@ func goCommand() error {
 	}
 	defer client.Close()
 
-	return go_()
+	return getOffset()
 }
 
 func driftCommand() error {
@@ -214,7 +214,7 @@ func driftCommand() error {
 	}
 	defer client.Close()
 
-	return drift()
+	return getDrift()
 }
 
 func main() {
