@@ -70,7 +70,7 @@ func (k *Koff) Init() error {
 	return nil
 }
 
-func (k *Koff) iniOffsetCoordinator(consumerGroup string) (err error) {
+func (k *Koff) initOffsetCoordinator(consumerGroup string) (err error) {
 	offsetCoordinator, err := k.client.Coordinator(consumerGroup)
 	if err != nil {
 		return err
@@ -135,7 +135,7 @@ func (k *Koff) GetNewestOffsets(topic string, partitions ...int32) (map[int32]in
 }
 
 func (k *Koff) GetConsumerGroupOffsets(consumerGroup, topic string, version int16, partitions ...int32) (map[int32]int64, error) {
-	if err := k.iniOffsetCoordinator(consumerGroup); err != nil {
+	if err := k.initOffsetCoordinator(consumerGroup); err != nil {
 		return nil, err
 	}
 
