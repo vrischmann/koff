@@ -11,6 +11,7 @@ type topicAndPartition struct {
 	partition int32
 }
 
+// Koff provides method to get and compare offsets of consumer groups.
 type Koff struct {
 	client sarama.Client
 
@@ -19,6 +20,7 @@ type Koff struct {
 	offsetCoordinators map[string]*sarama.Broker
 }
 
+// New creates a new Koff structure.
 func New(client sarama.Client) *Koff {
 	return &Koff{
 		client:             client,
@@ -28,6 +30,9 @@ func New(client sarama.Client) *Koff {
 	}
 }
 
+// Init initializes the state of the Koff instance.
+//
+// It queries the Kafka cluster for a list of topics and refreshes the metadata for each topic.
 func (k *Koff) Init() error {
 	topics, err := k.client.Topics()
 	if err != nil {
@@ -89,7 +94,10 @@ func (k *Koff) initOffsetCoordinator(consumerGroup string) (err error) {
 	return nil
 }
 
-func (k *Koff) OffsetInAvailableRange(topic string, partitions ...int32) (bool, error) {
+// OffsetInAvailableRange check that the provided offset is in the available range of the topic and partitions.
+//
+// If multiple partitions are provided, the offset is checked for all partitions.
+func (k *Koff) OffsetInAvailableRange(topic string, offset int64, partitions ...int32) (bool, error) {
 	return false, nil
 }
 
@@ -126,14 +134,27 @@ func (k *Koff) getOffset(topic string, offset int64, partitions ...int32) (res m
 	return
 }
 
+// GetOldestOffsets retrieves the oldest available offsets for each partitions of the provided topic.
+//
+// Returns a map of partitions to offset.
 func (k *Koff) GetOldestOffsets(topic string, partitions ...int32) (res map[int32]int64, err error) {
 	return k.getOffset(topic, sarama.OffsetOldest, partitions...)
 }
 
+// GetNewestOffsets retrieves the newest available offsets for each partitions of the provided topic.
+//
+// Returns a map of partitions to offset.
 func (k *Koff) GetNewestOffsets(topic string, partitions ...int32) (map[int32]int64, error) {
 	return k.getOffset(topic, sarama.OffsetNewest, partitions...)
 }
 
+// GetConsumerGroupOffsets retrieves the last committed offsets for the given consumer group.
+//
+// Version is the version you use when committing:
+// - 0 means stored in ZooKeeper.
+// - > 1 means stored in Kafka itself.
+//
+// Returns a map of partitions to offset.
 func (k *Koff) GetConsumerGroupOffsets(consumerGroup, topic string, version int16, partitions ...int32) (map[int32]int64, error) {
 	if err := k.initOffsetCoordinator(consumerGroup); err != nil {
 		return nil, err
@@ -167,6 +188,9 @@ func (k *Koff) GetConsumerGroupOffsets(consumerGroup, topic string, version int1
 	return res, nil
 }
 
+// GetDrift computes the drift between the last comitted offsets of a consumer group and the newest offsets available for a topic and partition.
+//
+// Returns a map of partitions to offset.
 func (k *Koff) GetDrift(consumerGroup, topic string, version int16, partitions ...int32) (map[int32]int64, error) {
 	availableOffsets, err := k.GetNewestOffsets(topic, partitions...)
 	if err != nil {
