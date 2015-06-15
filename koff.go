@@ -101,7 +101,7 @@ func (k *Koff) getOffset(topic string, offset int64, partitions ...int32) (res m
 	}
 
 	if len(partitions) > len(k.partitions[topic]) {
-		return nil, fmt.Errorf("topic '%s' has only %d partitions", len(k.partitions[topic]))
+		return nil, fmt.Errorf("topic '%s' has only %d partitions", topic, len(k.partitions[topic]))
 	}
 
 	for _, p := range partitions {
