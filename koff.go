@@ -1,6 +1,10 @@
 package koff
 
-import "github.com/Shopify/sarama"
+import (
+	"fmt"
+
+	"github.com/Shopify/sarama"
+)
 
 type topicAndPartition struct {
 	topic     string
@@ -94,6 +98,10 @@ func (k *Koff) getOffset(topic string, offset int64, partitions ...int32) (res m
 
 	if len(partitions) <= 0 {
 		partitions = k.partitions[topic]
+	}
+
+	if len(partitions) > len(k.partitions[topic]) {
+		return nil, fmt.Errorf("topic '%s' has only %d partitions", len(k.partitions[topic]))
 	}
 
 	for _, p := range partitions {
