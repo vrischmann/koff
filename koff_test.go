@@ -1,19 +1,21 @@
 package koff_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/require"
+	"github.com/vrischmann/karl"
 	"github.com/vrischmann/koff"
 )
 
 func getClient(t testing.TB) sarama.Client {
-	addr := os.Getenv("KAFKA_BROKER")
-	if addr == "" {
-		addr = "localhost:9092"
-	}
+	err := karl.Listen("localhost:9092")
+	require.Nil(t, err)
+	karl.AddTopicAndPartition("foobar", 0, 1)
+	go karl.Run()
+
+	addr := "localhost:9092"
 
 	config := sarama.NewConfig()
 	config.Producer.Partitioner = sarama.NewManualPartitioner
@@ -44,6 +46,7 @@ func produce(t testing.TB, partition int32, producer sarama.SyncProducer) {
 func TestGetOffsets(t *testing.T) {
 	client := getClient(t)
 	defer client.Close()
+	defer karl.Close()
 
 	k := koff.New(client)
 	err := k.Init()
@@ -78,6 +81,8 @@ func TestGetOffsets(t *testing.T) {
 func TestGetConsumerGroupOffsets(t *testing.T) {
 	client := getClient(t)
 	defer client.Close()
+	defer karl.Close()
+
 	p := getProducer(t, client)
 	produce(t, 0, p)
 	produce(t, 1, p)
@@ -86,7 +91,7 @@ func TestGetConsumerGroupOffsets(t *testing.T) {
 	err := k.Init()
 	require.Nil(t, err)
 
-	offsets, err := k.GetConsumerGroupOffsets("myConsumerGroup", "foobar", 0, 1)
+	offsets, err := k.GetConsumerGroupOffsets("myConsumerGroup", "foobar", 1, 0, 1)
 	require.Nil(t, err)
 
 	require.Equal(t, 2, len(offsets))
