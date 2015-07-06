@@ -1,6 +1,9 @@
 koff
 ====
 
+[![Build Status](https://travis-ci.org/vrischmann/koff.svg?branch=master)](https://travis-ci.org/vrischmann/koff)
+[![GoDoc](https://godoc.org/github.com/vrischmann/koff?status.svg)](https://godoc.org/github.com/vrischmann/koff)
+
 koff is a small tool to get information about Kafka offsets.
 
 Run `koff --help` to get the help.
