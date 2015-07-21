@@ -2,6 +2,7 @@ package koff
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/Shopify/sarama"
 )
@@ -15,8 +16,11 @@ type topicAndPartition struct {
 type Koff struct {
 	client sarama.Client
 
+	pMu                sync.RWMutex
 	partitions         map[string][]int32
+	lMu                sync.RWMutex
 	leaders            map[topicAndPartition]*sarama.Broker
+	oMu                sync.RWMutex
 	offsetCoordinators map[string]*sarama.Broker
 }
 
@@ -42,6 +46,14 @@ func (k *Koff) Init() error {
 	if err := k.client.RefreshMetadata(topics...); err != nil {
 		return err
 	}
+
+	k.pMu.Lock()
+	k.lMu.Lock()
+
+	defer func() {
+		k.pMu.Unlock()
+		k.lMu.Unlock()
+	}()
 
 	for _, topic := range topics {
 		p, err := k.client.Partitions(topic)
@@ -89,6 +101,9 @@ func (k *Koff) initOffsetCoordinator(consumerGroup string) (err error) {
 		return err
 	}
 
+	k.oMu.Lock()
+	defer k.oMu.Unlock()
+
 	k.offsetCoordinators[consumerGroup] = offsetCoordinator
 
 	return nil
@@ -102,16 +117,20 @@ func (k *Koff) OffsetInAvailableRange(topic string, offset int64, partitions ...
 }
 
 func (k *Koff) getOffset(topic string, offset int64, partitions ...int32) (res map[int32]int64, err error) {
-	res = make(map[int32]int64)
-
 	if len(partitions) <= 0 {
+		k.pMu.RLock()
 		partitions = k.partitions[topic]
+		k.pMu.RUnlock()
 	}
 
 	if len(partitions) > len(k.partitions[topic]) {
 		return nil, fmt.Errorf("topic '%s' has only %d partitions", topic, len(k.partitions[topic]))
 	}
 
+	k.lMu.RLock()
+	defer k.lMu.RUnlock()
+
+	res = make(map[int32]int64)
 	for _, p := range partitions {
 		req := &sarama.OffsetRequest{}
 		req.AddBlock(topic, p, offset, 1)
@@ -161,8 +180,13 @@ func (k *Koff) GetConsumerGroupOffsets(consumerGroup, topic string, version int1
 	}
 
 	if len(partitions) <= 0 {
+		k.pMu.RLock()
 		partitions = k.partitions[topic]
+		k.pMu.RUnlock()
 	}
+
+	k.oMu.RLock()
+	defer k.oMu.RUnlock()
 
 	res := make(map[int32]int64)
 	for _, p := range partitions {
