@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 
 	"github.com/Shopify/sarama"
@@ -77,8 +78,15 @@ func getConsumerGroupOffset() (err error) {
 		}
 	}
 
-	for k, v := range offsets {
-		fmt.Printf("p:%-6d %-10d\n", k, v)
+	var keys []int
+	for k, _ := range keys {
+		keys = append(keys, int(k))
+	}
+
+	sort.Ints(keys)
+
+	for _, part := range keys {
+		fmt.Printf("p:%-6d %-10d\n", part, offsets[int32(part)])
 	}
 
 	return nil
