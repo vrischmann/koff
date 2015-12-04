@@ -79,7 +79,7 @@ func getConsumerGroupOffset() (err error) {
 	}
 
 	var keys []int
-	for k, _ := range keys {
+	for k, _ := range offsets {
 		keys = append(keys, int(k))
 	}
 
@@ -116,8 +116,15 @@ func getOffset() (err error) {
 		}
 	}
 
-	for k, v := range offsets {
-		fmt.Printf("p:%-6d %-10d\n", k, v)
+	var keys []int
+	for k, _ := range offsets {
+		keys = append(keys, int(k))
+	}
+
+	sort.Ints(keys)
+
+	for _, part := range keys {
+		fmt.Printf("p:%-6d %-10d\n", part, offsets[int32(part)])
 	}
 
 	return nil
@@ -161,9 +168,18 @@ func getDrift() (err error) {
 		}
 	}
 
-	for k, v := range availableOffsets {
-		o := offsets[k]
-		fmt.Printf("p:%-6d %-10d %-10d", k, v, o)
+	var keys []int
+	for k, _ := range availableOffsets {
+		keys = append(keys, int(k))
+	}
+
+	sort.Ints(keys)
+
+	for _, part := range keys {
+		o := offsets[int32(part)]
+		v := availableOffsets[int32(part)]
+
+		fmt.Printf("p:%-6d %-10d %-10d", part, v, o)
 		if o != v {
 			fmt.Printf("   !!!!\n")
 		} else {
