@@ -179,7 +179,7 @@ func getDrift() (err error) {
 		o := offsets[int32(part)]
 		v := availableOffsets[int32(part)]
 
-		fmt.Printf("p:%-6d %-10d %-10d", part, v, o)
+		fmt.Printf("p:%-6d %-10d %-10d -> %d", part, v, o, v-o)
 		if o != v {
 			fmt.Printf("   !!!!\n")
 		} else {
