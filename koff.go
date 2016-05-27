@@ -218,12 +218,12 @@ func (k *Koff) GetConsumerGroupOffsets(consumerGroup, topic string, version int1
 func (k *Koff) GetDrift(consumerGroup, topic string, version int16, partitions ...int32) (map[int32]int64, error) {
 	availableOffsets, err := k.GetNewestOffsets(topic, partitions...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to get newest offsets. err=%v", err)
 	}
 
 	cgroupOffsets, err := k.GetConsumerGroupOffsets(consumerGroup, topic, version, partitions...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to get consumer group offsets. err=%v", err)
 	}
 
 	res := make(map[int32]int64)
