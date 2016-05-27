@@ -139,12 +139,12 @@ func (k *Koff) getOffset(topic string, offset int64, partitions ...int32) (res m
 
 		resp, err := k.leaders[tp].GetAvailableOffsets(req)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unable to get available offset for (%s, %d) offset %d. err=%v", topic, p, offset, err)
 		}
 
 		block := resp.GetBlock(topic, p)
 		if block.Err != sarama.ErrNoError {
-			return nil, block.Err
+			return nil, fmt.Errorf("unable to get available offset for (%s, %d) offset %d. err=%v", topic, p, offset, block.Err)
 		}
 
 		res[p] = block.Offsets[0]
