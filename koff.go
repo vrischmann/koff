@@ -176,7 +176,7 @@ func (k *Koff) GetNewestOffsets(topic string, partitions ...int32) (map[int32]in
 // Returns a map of partitions to offset.
 func (k *Koff) GetConsumerGroupOffsets(consumerGroup, topic string, version int16, partitions ...int32) (map[int32]int64, error) {
 	if err := k.initOffsetCoordinator(consumerGroup); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to init offset coordinator. err=%v", err)
 	}
 
 	if len(partitions) <= 0 {
@@ -198,12 +198,12 @@ func (k *Koff) GetConsumerGroupOffsets(consumerGroup, topic string, version int1
 
 		resp, err := k.offsetCoordinators[consumerGroup].FetchOffset(req)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unable to fetch offset of (%s, %d, %d). err=%v", topic, p, version, err)
 		}
 
 		block := resp.Blocks[topic][p]
 		if block.Err != sarama.ErrNoError {
-			return nil, block.Err
+			return nil, fmt.Errorf("unable to fetch offset of (%s, %d, %d). err=%v", topic, p, version, block.Err)
 		}
 
 		res[p] = resp.Blocks[topic][p].Offset + 1 // the offset we fetch is the last committed we need the next to fetch
