@@ -17,7 +17,7 @@ Usage of ./koff
 Subcommands:
 
 get-consumer-group-offset, gcgo
-  -V=1: The Kafka protocol version
+  -V=1: The Kafka offset version
   -c="": The consumer group
   -p=-1: The partition
   -t="": The topic
@@ -28,7 +28,7 @@ get-offset, go
   -t="": The topic
 
 drift, d
-  -V=1: The Kafka protocol version
+  -V=1: The Kafka offset version
   -c="": The consumer group
   -n=true: Compare to the newest offset instead of the oldest
   -p=-1: The partition
