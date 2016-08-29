@@ -167,14 +167,39 @@ func (k *Koff) GetNewestOffsets(topic string, partitions ...int32) (map[int32]in
 	return k.getOffset(topic, sarama.OffsetNewest, partitions...)
 }
 
+type OffsetVersion int16
+
+const (
+	ZKOffsetVersion    OffsetVersion = 0
+	KafkaOffsetVersion OffsetVersion = 1
+)
+
+func (v *OffsetVersion) Set(s string) error {
+	switch s {
+	case "0":
+		*v = ZKOffsetVersion
+	case "1":
+		*v = KafkaOffsetVersion
+	default:
+		return fmt.Errorf("%q unknown offset version", s)
+	}
+	return nil
+}
+
+func (v OffsetVersion) String() string {
+	switch v {
+	case ZKOffsetVersion:
+		return "0"
+	case KafkaOffsetVersion:
+		return "1"
+	default:
+		return "unknown"
+	}
+}
+
 // GetConsumerGroupOffsets retrieves the last committed offsets for the given consumer group.
-//
-// Version is the version you use when committing:
-// - 0 means stored in ZooKeeper.
-// - > 1 means stored in Kafka itself.
-//
 // Returns a map of partitions to offset.
-func (k *Koff) GetConsumerGroupOffsets(consumerGroup, topic string, version int16, partitions ...int32) (map[int32]int64, error) {
+func (k *Koff) GetConsumerGroupOffsets(consumerGroup, topic string, version OffsetVersion, partitions ...int32) (map[int32]int64, error) {
 	if err := k.initOffsetCoordinator(consumerGroup); err != nil {
 		return nil, fmt.Errorf("unable to init offset coordinator. err=%v", err)
 	}
@@ -192,7 +217,7 @@ func (k *Koff) GetConsumerGroupOffsets(consumerGroup, topic string, version int1
 	for _, p := range partitions {
 		req := &sarama.OffsetFetchRequest{
 			ConsumerGroup: consumerGroup,
-			Version:       version,
+			Version:       int16(version),
 		}
 		req.AddPartition(topic, p)
 
@@ -206,7 +231,7 @@ func (k *Koff) GetConsumerGroupOffsets(consumerGroup, topic string, version int1
 			return nil, fmt.Errorf("unable to fetch offset of (%s, %d, %d). err=%v", topic, p, version, block.Err)
 		}
 
-		res[p] = resp.Blocks[topic][p].Offset + 1 // the offset we fetch is the last committed we need the next to fetch
+		res[p] = resp.Blocks[topic][p].Offset
 	}
 
 	return res, nil
@@ -215,7 +240,7 @@ func (k *Koff) GetConsumerGroupOffsets(consumerGroup, topic string, version int1
 // GetDrift computes the drift between the last comitted offsets of a consumer group and the newest offsets available for a topic and partition.
 //
 // Returns a map of partitions to offset.
-func (k *Koff) GetDrift(consumerGroup, topic string, version int16, partitions ...int32) (map[int32]int64, error) {
+func (k *Koff) GetDrift(consumerGroup, topic string, version OffsetVersion, partitions ...int32) (map[int32]int64, error) {
 	availableOffsets, err := k.GetNewestOffsets(topic, partitions...)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get newest offsets. err=%v", err)

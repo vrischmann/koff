@@ -68,9 +68,9 @@ func getConsumerGroupOffset() (err error) {
 	{
 		partition := int32(flPartition)
 		if partition > -1 {
-			offsets, err = k.GetConsumerGroupOffsets(flConsumerGroup, flTopic, int16(flVersion), partition)
+			offsets, err = k.GetConsumerGroupOffsets(flConsumerGroup, flTopic, flVersion, partition)
 		} else {
-			offsets, err = k.GetConsumerGroupOffsets(flConsumerGroup, flTopic, int16(flVersion))
+			offsets, err = k.GetConsumerGroupOffsets(flConsumerGroup, flTopic, flVersion)
 		}
 
 		if err != nil {
@@ -158,9 +158,9 @@ func getDrift() (err error) {
 	var offsets map[int32]int64
 	{
 		if partition > -1 {
-			offsets, err = k.GetConsumerGroupOffsets(flConsumerGroup, flTopic, int16(flVersion), partition)
+			offsets, err = k.GetConsumerGroupOffsets(flConsumerGroup, flTopic, flVersion, partition)
 		} else {
-			offsets, err = k.GetConsumerGroupOffsets(flConsumerGroup, flTopic, int16(flVersion))
+			offsets, err = k.GetConsumerGroupOffsets(flConsumerGroup, flTopic, flVersion)
 		}
 
 		if err != nil {

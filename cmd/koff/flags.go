@@ -4,12 +4,14 @@ import (
 	"flag"
 	"fmt"
 	"os"
+
+	"github.com/vrischmann/koff"
 )
 
 var (
 	flBroker        string
 	flConsumerGroup string
-	flVersion       int
+	flVersion       koff.OffsetVersion
 	flTopic         string
 	flPartition     int
 	flNewest        bool
@@ -25,7 +27,7 @@ func init() {
 	flag.StringVar(&flBroker, "b", "", "The broker to use")
 
 	fsGCGO.StringVar(&flConsumerGroup, "c", "", "The consumer group")
-	fsGCGO.IntVar(&flVersion, "V", 1, "The Kafka protocol version")
+	fsGCGO.Var(&flVersion, "V", "The Kafka offset version")
 	fsGCGO.StringVar(&flTopic, "t", "", "The topic")
 	fsGCGO.IntVar(&flPartition, "p", -1, "The partition")
 
@@ -34,7 +36,7 @@ func init() {
 	fsGO.BoolVar(&flNewest, "n", true, "Get the newest offset instead of the oldest")
 
 	fsDrift.StringVar(&flConsumerGroup, "c", "", "The consumer group")
-	fsDrift.IntVar(&flVersion, "V", 1, "The Kafka protocol version")
+	fsDrift.Var(&flVersion, "V", "The Kafka offset version")
 	fsDrift.StringVar(&flTopic, "t", "", "The topic")
 	fsDrift.IntVar(&flPartition, "p", -1, "The partition")
 	fsDrift.BoolVar(&flNewest, "n", true, "Compare to the newest offset instead of the oldest")
