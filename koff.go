@@ -107,6 +107,10 @@ func (k *Koff) getOffset(topic string, offset int64, partitions ...int32) (res m
 			return fmt.Errorf("unable to get available offset for (%s, %d) offset %d. err=%v", topic, p, offset, err)
 		}
 
+		if err := k.client.RefreshMetadata(topic); err != nil {
+			return nil, mkerr(err)
+		}
+
 		leader, err := k.client.Leader(topic, p)
 		if err != nil {
 			return nil, mkerr(err)
