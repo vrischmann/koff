@@ -59,6 +59,10 @@ func (k *Koff) Init() error {
 }
 
 func (k *Koff) initOffsetCoordinator(consumerGroup string) (err error) {
+	if err := k.client.RefreshCoordinator(consumerGroup); err != nil {
+		return err
+	}
+
 	offsetCoordinator, err := k.client.Coordinator(consumerGroup)
 	if err != nil {
 		return err
