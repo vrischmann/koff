@@ -18,8 +18,6 @@ type Koff struct {
 
 	pMu                sync.RWMutex
 	partitions         map[string][]int32
-	lMu                sync.RWMutex
-	leaders            map[topicAndPartition]*sarama.Broker
 	oMu                sync.RWMutex
 	offsetCoordinators map[string]*sarama.Broker
 }
@@ -29,7 +27,6 @@ func New(client sarama.Client) *Koff {
 	return &Koff{
 		client:             client,
 		partitions:         make(map[string][]int32),
-		leaders:            make(map[topicAndPartition]*sarama.Broker),
 		offsetCoordinators: make(map[string]*sarama.Broker),
 	}
 }
@@ -48,12 +45,7 @@ func (k *Koff) Init() error {
 	}
 
 	k.pMu.Lock()
-	k.lMu.Lock()
-
-	defer func() {
-		k.pMu.Unlock()
-		k.lMu.Unlock()
-	}()
+	defer k.pMu.Unlock()
 
 	for _, topic := range topics {
 		p, err := k.client.Partitions(topic)
@@ -61,27 +53,6 @@ func (k *Koff) Init() error {
 			return err
 		}
 		k.partitions[topic] = p
-
-		for _, p := range k.partitions[topic] {
-			tp := topicAndPartition{topic, p}
-
-			{
-				leader, err := k.client.Leader(tp.topic, tp.partition)
-				if err != nil {
-					return err
-				}
-
-				if err = leader.Open(nil); err != sarama.ErrAlreadyConnected && err != nil {
-					return err
-				}
-
-				if _, err = leader.Connected(); err != nil {
-					return err
-				}
-
-				k.leaders[tp] = leader
-			}
-		}
 	}
 
 	return nil
@@ -127,17 +98,21 @@ func (k *Koff) getOffset(topic string, offset int64, partitions ...int32) (res m
 		return nil, fmt.Errorf("topic '%s' has only %d partitions", topic, len(k.partitions[topic]))
 	}
 
-	k.lMu.RLock()
-	defer k.lMu.RUnlock()
-
 	res = make(map[int32]int64)
 	for _, p := range partitions {
 		req := &sarama.OffsetRequest{}
 		req.AddBlock(topic, p, offset, 1)
 
-		tp := topicAndPartition{topic, p}
+		mkerr := func(err error) error {
+			return fmt.Errorf("unable to get available offset for (%s, %d) offset %d. err=%v", topic, p, offset, err)
+		}
 
-		resp, err := k.leaders[tp].GetAvailableOffsets(req)
+		leader, err := k.client.Leader(topic, p)
+		if err != nil {
+			return nil, mkerr(err)
+		}
+
+		resp, err := leader.GetAvailableOffsets(req)
 		if err != nil {
 			return nil, fmt.Errorf("unable to get available offset for (%s, %d) offset %d. err=%v", topic, p, offset, err)
 		}
