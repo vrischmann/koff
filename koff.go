@@ -16,18 +16,15 @@ type topicAndPartition struct {
 type Koff struct {
 	client sarama.Client
 
-	pMu                sync.RWMutex
-	partitions         map[string][]int32
-	oMu                sync.RWMutex
-	offsetCoordinators map[string]*sarama.Broker
+	pMu        sync.RWMutex
+	partitions map[string][]int32
 }
 
 // New creates a new Koff structure.
 func New(client sarama.Client) *Koff {
 	return &Koff{
-		client:             client,
-		partitions:         make(map[string][]int32),
-		offsetCoordinators: make(map[string]*sarama.Broker),
+		client:     client,
+		partitions: make(map[string][]int32),
 	}
 }
 
@@ -58,30 +55,25 @@ func (k *Koff) Init() error {
 	return nil
 }
 
-func (k *Koff) initOffsetCoordinator(consumerGroup string) (err error) {
+func (k *Koff) getOffsetCoordinator(consumerGroup string) (*sarama.Broker, error) {
 	if err := k.client.RefreshCoordinator(consumerGroup); err != nil {
-		return err
+		return nil, err
 	}
 
 	offsetCoordinator, err := k.client.Coordinator(consumerGroup)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err = offsetCoordinator.Open(nil); err != sarama.ErrAlreadyConnected && err != nil {
-		return nil
+		return offsetCoordinator, nil
 	}
 
 	if _, err = offsetCoordinator.Connected(); err != nil {
-		return err
+		return nil, err
 	}
 
-	k.oMu.Lock()
-	defer k.oMu.Unlock()
-
-	k.offsetCoordinators[consumerGroup] = offsetCoordinator
-
-	return nil
+	return offsetCoordinator, nil
 }
 
 // OffsetInAvailableRange check that the provided offset is in the available range of the topic and partitions.
@@ -183,7 +175,8 @@ func (v OffsetVersion) String() string {
 // GetConsumerGroupOffsets retrieves the last committed offsets for the given consumer group.
 // Returns a map of partitions to offset.
 func (k *Koff) GetConsumerGroupOffsets(consumerGroup, topic string, version OffsetVersion, partitions ...int32) (map[int32]int64, error) {
-	if err := k.initOffsetCoordinator(consumerGroup); err != nil {
+	offsetCoordinator, err := k.getOffsetCoordinator(consumerGroup)
+	if err != nil {
 		return nil, fmt.Errorf("unable to init offset coordinator. err=%v", err)
 	}
 
@@ -193,9 +186,6 @@ func (k *Koff) GetConsumerGroupOffsets(consumerGroup, topic string, version Offs
 		k.pMu.RUnlock()
 	}
 
-	k.oMu.RLock()
-	defer k.oMu.RUnlock()
-
 	res := make(map[int32]int64)
 	for _, p := range partitions {
 		req := &sarama.OffsetFetchRequest{
@@ -204,7 +194,7 @@ func (k *Koff) GetConsumerGroupOffsets(consumerGroup, topic string, version Offs
 		}
 		req.AddPartition(topic, p)
 
-		resp, err := k.offsetCoordinators[consumerGroup].FetchOffset(req)
+		resp, err := offsetCoordinator.FetchOffset(req)
 		if err != nil {
 			return nil, fmt.Errorf("unable to fetch offset of (%s, %d, %d). err=%v", topic, p, version, err)
 		}
