@@ -172,25 +172,27 @@ func (k *Koff) GetConsumerGroupOffsets(consumerGroup, topic string, version Offs
 		k.pMu.RUnlock()
 	}
 
+	req := &sarama.OffsetFetchRequest{
+		ConsumerGroup: consumerGroup,
+		Version:       int16(version),
+	}
+	for _, p := range partitions {
+		req.AddPartition(topic, p)
+	}
+
+	resp, err := offsetCoordinator.FetchOffset(req)
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch offset of (%s, %d). err=%v", topic, version, err)
+	}
+
 	res := make(map[int32]int64)
 	for _, p := range partitions {
-		req := &sarama.OffsetFetchRequest{
-			ConsumerGroup: consumerGroup,
-			Version:       int16(version),
-		}
-		req.AddPartition(topic, p)
-
-		resp, err := offsetCoordinator.FetchOffset(req)
-		if err != nil {
-			return nil, fmt.Errorf("unable to fetch offset of (%s, %d, %d). err=%v", topic, p, version, err)
-		}
-
 		block := resp.Blocks[topic][p]
 		if block.Err != sarama.ErrNoError {
-			return nil, fmt.Errorf("unable to fetch offset of (%s, %d, %d). err=%v", topic, p, version, block.Err)
+			return nil, fmt.Errorf("unable to fetch offset of (%s, %d). err=%v", topic, version, block.Err)
 		}
 
-		res[p] = resp.Blocks[topic][p].Offset
+		res[p] = block.Offset
 	}
 
 	return res, nil
