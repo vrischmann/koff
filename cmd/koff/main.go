@@ -85,8 +85,9 @@ func getConsumerGroupOffset() (err error) {
 
 	sort.Ints(keys)
 
+	fmt.Printf("%-12s %-10s\n", "partition", "offset")
 	for _, part := range keys {
-		fmt.Printf("p:%-6d %-10d\n", part, offsets[int32(part)])
+		fmt.Printf("p:%-10d %-10d\n", part, offsets[int32(part)])
 	}
 
 	return nil
@@ -123,8 +124,9 @@ func getOffset(newest bool) (err error) {
 
 	sort.Ints(keys)
 
+	fmt.Printf("%-12s %-10s\n", "partition", "offset")
 	for _, part := range keys {
-		fmt.Printf("p:%-6d %-10d\n", part, offsets[int32(part)])
+		fmt.Printf("p:%-10d %-10d\n", part, offsets[int32(part)])
 	}
 
 	return nil
@@ -171,11 +173,12 @@ func getDrift() (err error) {
 
 	sort.Ints(keys)
 
+	fmt.Printf("%-12s %-10s %-10s -> %s\n", "partition", "newest", "offset", "drift")
 	for _, part := range keys {
 		o := offsets[int32(part)]
 		v := availableOffsets[int32(part)]
 
-		fmt.Printf("p:%-6d %-10d %-10d -> %d", part, v, o, v-o)
+		fmt.Printf("p:%-10d %-10d %-10d -> %d", part, v, o, v-o)
 		if o != v {
 			fmt.Printf("   !!!!\n")
 		} else {
