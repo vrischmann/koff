@@ -14,7 +14,6 @@ var (
 	flVersion       koff.OffsetVersion
 	flTopic         string
 	flPartition     int
-	flNewest        bool
 
 	fsGCGO  = flag.NewFlagSet("gcgo", flag.ContinueOnError)
 	fsGO    = flag.NewFlagSet("go", flag.ContinueOnError)
@@ -33,13 +32,11 @@ func init() {
 
 	fsGO.StringVar(&flTopic, "t", "", "The topic")
 	fsGO.IntVar(&flPartition, "p", -1, "The partition")
-	fsGO.BoolVar(&flNewest, "n", true, "Get the newest offset instead of the oldest")
 
 	fsDrift.StringVar(&flConsumerGroup, "c", "", "The consumer group")
 	fsDrift.Var(&flVersion, "V", "The Kafka offset version")
 	fsDrift.StringVar(&flTopic, "t", "", "The topic")
 	fsDrift.IntVar(&flPartition, "p", -1, "The partition")
-	fsDrift.BoolVar(&flNewest, "n", true, "Compare to the newest offset instead of the oldest")
 }
 
 func printUsage() {
@@ -47,7 +44,8 @@ func printUsage() {
 	flag.PrintDefaults()
 	fmt.Fprintf(os.Stderr, "\nSubcommands:\n\nget-consumer-group-offset, gcgo\n")
 	fsGCGO.PrintDefaults()
-	fmt.Fprintf(os.Stderr, "\nget-offset, go\n")
+	fmt.Fprintf(os.Stderr, "\nget-oldest-offset, go\n")
+	fmt.Fprintf(os.Stderr, "\nget-newest-offset, gn\n")
 	fsGO.PrintDefaults()
 	fmt.Fprintf(os.Stderr, "\ndrift, d\n")
 	fsDrift.PrintDefaults()

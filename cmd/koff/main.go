@@ -92,7 +92,7 @@ func getConsumerGroupOffset() (err error) {
 	return nil
 }
 
-func getOffset() (err error) {
+func getOffset(newest bool) (err error) {
 	k := koff.New(client)
 	if err := k.Init(); err != nil {
 		return err
@@ -101,13 +101,13 @@ func getOffset() (err error) {
 	var offsets map[int32]int64
 	{
 		partition := int32(flPartition)
-		if partition > -1 && flNewest {
+		if partition > -1 && newest {
 			offsets, err = k.GetNewestOffsets(flTopic, partition)
-		} else if partition > -1 && !flNewest {
+		} else if partition > -1 && !newest {
 			offsets, err = k.GetOldestOffsets(flTopic, partition)
-		} else if partition == -1 && flNewest {
+		} else if partition == -1 && newest {
 			offsets, err = k.GetNewestOffsets(flTopic)
-		} else if partition == -1 && !flNewest {
+		} else if partition == -1 && !newest {
 			offsets, err = k.GetOldestOffsets(flTopic)
 		}
 
@@ -140,14 +140,10 @@ func getDrift() (err error) {
 
 	var availableOffsets map[int32]int64
 	{
-		if partition > -1 && flNewest {
+		if partition > -1 {
 			availableOffsets, err = k.GetNewestOffsets(flTopic, partition)
-		} else if partition > -1 && !flNewest {
-			availableOffsets, err = k.GetOldestOffsets(flTopic, partition)
-		} else if partition == -1 && flNewest {
+		} else {
 			availableOffsets, err = k.GetNewestOffsets(flTopic)
-		} else if partition == -1 && !flNewest {
-			availableOffsets, err = k.GetOldestOffsets(flTopic)
 		}
 
 		if err != nil {
@@ -207,7 +203,7 @@ func gcgoCommand() error {
 	return getConsumerGroupOffset()
 }
 
-func goCommand() error {
+func getOffsetCommand(newest bool) error {
 	if err := fsGO.Parse(flag.Args()[1:]); err != nil {
 		return err
 	}
@@ -221,7 +217,7 @@ func goCommand() error {
 	}
 	defer client.Close()
 
-	return getOffset()
+	return getOffset(newest)
 }
 
 func driftCommand() error {
@@ -251,9 +247,15 @@ func main() {
 			log.Fatalln(err)
 			return
 		}
-	case "get-offset", "go":
+	case "get-oldest-offset", "go":
 		cmd = cmdGetOffset
-		if err := goCommand(); err != nil {
+		if err := getOffsetCommand(false); err != nil {
+			log.Fatalln(err)
+			return
+		}
+	case "get-newest-offset", "gn":
+		cmd = cmdGetOffset
+		if err := getOffsetCommand(true); err != nil {
 			log.Fatalln(err)
 			return
 		}
