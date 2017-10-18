@@ -96,33 +96,19 @@ func (k *Koff) getOffset(topic string, offset int64, partitions ...int32) (res m
 
 	res = make(map[int32]int64)
 	for _, p := range partitions {
-		req := &sarama.OffsetRequest{}
-		req.AddBlock(topic, p, offset, 1)
-
-		mkerr := func(err error) error {
-			return fmt.Errorf("unable to get available offset for (%s, %d) offset %d. err=%v", topic, p, offset, err)
-		}
-
-		if err := k.client.RefreshMetadata(topic); err != nil {
-			return nil, mkerr(err)
-		}
-
-		leader, err := k.client.Leader(topic, p)
+		fetchedOffset, err := k.client.GetOffset(topic, p, offset)
 		if err != nil {
-			return nil, mkerr(err)
+			return nil, fmt.Errorf("unable to get available offset for (%q, %d) offset %d. err=%v", topic, p, offset, err)
 		}
 
-		resp, err := leader.GetAvailableOffsets(req)
-		if err != nil {
-			return nil, fmt.Errorf("unable to get available offset for (%s, %d) offset %d. err=%v", topic, p, offset, err)
+		if offset == sarama.OffsetNewest {
+			// When requesting the newest offset Kafka returns the offset of the NEXT message.
+			// For our purpose we want the most recent offset
+			// https://cwiki.apache.org/confluence/display/KAFKA/A+Guide+To+The+Kafka+Protocol#AGuideToTheKafkaProtocol-OffsetRequest
+			res[p] = fetchedOffset - 1
+		} else {
+			res[p] = fetchedOffset
 		}
-
-		block := resp.GetBlock(topic, p)
-		if block.Err != sarama.ErrNoError {
-			return nil, fmt.Errorf("unable to get available offset for (%s, %d) offset %d. err=%v", topic, p, offset, block.Err)
-		}
-
-		res[p] = block.Offsets[0]
 	}
 
 	return
