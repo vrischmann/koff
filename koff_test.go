@@ -81,8 +81,8 @@ func TestGetOffsets(t *testing.T) {
 	require.Nil(t, err)
 
 	require.Equal(t, 2, len(offsets))
-	require.Equal(t, int64(1000), offsets[0])
-	require.Equal(t, int64(10000), offsets[1])
+	require.Equal(t, int64(999), offsets[0])
+	require.Equal(t, int64(9999), offsets[1])
 }
 
 func TestGetConsumerGroupOffsets(t *testing.T) {
@@ -112,6 +112,6 @@ func TestGetDrift(t *testing.T) {
 	drifts, err := k.GetDrift("myConsumerGroup", "foobar", koff.KafkaOffsetVersion, 0, 1)
 	require.Nil(t, err)
 	require.Equal(t, 2, len(drifts))
-	require.Equal(t, int64(200), drifts[0])
-	require.Equal(t, int64(2000), drifts[1])
+	require.Equal(t, int64(199), drifts[0])
+	require.Equal(t, int64(1999), drifts[1])
 }
